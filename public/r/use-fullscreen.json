@@ -1,0 +1,12 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "use-fullscreen",
+  "files": [
+    {
+      "path": "registry/default/hooks/use-fullscreen.ts",
+      "content": "import * as React from \"react\"\n\n// Custom hook to handle fullscreen state\nexport function useFullscreen() {\n  const ref = React.useRef<HTMLDivElement>(null)\n  const [isFullscreen, setIsFullscreen] = React.useState(false)\n\n  const onFullscreenChange = React.useCallback(() => {\n    setIsFullscreen(Boolean(document.fullscreenElement === ref.current))\n  }, [ref])\n\n  React.useEffect(() => {\n    document.addEventListener(\"fullscreenchange\", onFullscreenChange)\n    return () =>\n      document.removeEventListener(\"fullscreenchange\", onFullscreenChange)\n  }, [onFullscreenChange])\n\n  const toggleFullscreen = React.useCallback(() => {\n    if (!isFullscreen) {\n      ref.current?.requestFullscreen()\n    } else {\n      document.exitFullscreen()\n    }\n  }, [isFullscreen])\n\n  return { ref, fullscreen: isFullscreen, toggleFullscreen }\n}\n",
+      "type": "registry:hook"
+    }
+  ],
+  "type": "registry:hook"
+}

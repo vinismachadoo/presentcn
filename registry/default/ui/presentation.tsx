@@ -1,17 +1,21 @@
 "use client"
 
-import { Button } from "@/registry/button"
-import { ButtonGroup } from "@/registry/button-group"
+import { Button } from "@/components/ui/button"
+import { ButtonGroup } from "@/components/ui/button-group"
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   type CarouselApi,
-} from "@/registry/carousel"
-import { Kbd } from "@/registry/kbd"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/registry/tooltip"
-import { useFullscreen } from "@/hooks/use-fullscreen"
+} from "@/components/ui/carousel"
+import { Kbd } from "@/components/ui/kbd"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { useFullscreen } from "@/registry/default/hooks/use-fullscreen"
 import {
   ChevronLeft,
   ChevronRight,
@@ -22,7 +26,7 @@ import {
   Undo2,
 } from "lucide-react"
 import { useTheme } from "next-themes"
-import { parseAsInteger, parseAsString, useQueryState } from "nuqs"
+import { parseAsInteger, useQueryState } from "nuqs"
 import React from "react"
 import { useHotkeys } from "react-hotkeys-hook"
 
@@ -35,11 +39,21 @@ const PresentationContext = React.createContext<
       fullscreen: boolean
       fullscreenRef: React.RefObject<HTMLDivElement | null>
       toggleFullscreen: () => void
+      disableShortcuts: Array<
+        "fullscreen" | "restart" | "theme" | "previous" | "next"
+      >
     }
   | undefined
 >(undefined)
 
-const PresentationProvider = ({ children }: React.PropsWithChildren) => {
+const PresentationProvider = ({
+  children,
+  disableShortcuts = [],
+}: React.PropsWithChildren<{
+  disableShortcuts?: Array<
+    "fullscreen" | "restart" | "theme" | "previous" | "next"
+  >
+}>) => {
   const [api, setApi] = React.useState<CarouselApi>()
   const [current, setCurrent] = useQueryState(
     "slide",
@@ -69,17 +83,27 @@ const PresentationProvider = ({ children }: React.PropsWithChildren) => {
   const { ref: fullscreenRef, fullscreen, toggleFullscreen } = useFullscreen()
 
   const { resolvedTheme, setTheme } = useTheme()
-  useHotkeys("d", () => setTheme(resolvedTheme === "dark" ? "light" : "dark"))
+  useHotkeys("d", () => setTheme(resolvedTheme === "dark" ? "light" : "dark"), {
+    enabled: !disableShortcuts?.includes("theme"),
+  })
 
-  useHotkeys("r", () => setCurrent(1))
+  useHotkeys("r", () => setCurrent(1), {
+    enabled: !disableShortcuts?.includes("restart"),
+  })
 
-  useHotkeys("left", () => setCurrent(Math.max(1, current - 1)))
+  useHotkeys("left", () => setCurrent(Math.max(1, current - 1)), {
+    enabled: !disableShortcuts?.includes("previous"),
+  })
 
-  useHotkeys("right", () =>
-    setCurrent(Math.min(api?.scrollSnapList()?.length ?? 0, current + 1))
+  useHotkeys(
+    "right",
+    () => setCurrent(Math.min(api?.scrollSnapList()?.length ?? 0, current + 1)),
+    { enabled: !disableShortcuts?.includes("next") }
   )
 
-  useHotkeys("f", () => toggleFullscreen())
+  useHotkeys("f", () => toggleFullscreen(), {
+    enabled: !disableShortcuts?.includes("fullscreen"),
+  })
 
   return (
     <PresentationContext.Provider
@@ -92,6 +116,7 @@ const PresentationProvider = ({ children }: React.PropsWithChildren) => {
         fullscreen,
         fullscreenRef,
         toggleFullscreen,
+        disableShortcuts,
       }}
     >
       {children}
@@ -113,17 +138,15 @@ const Presentation = ({
   className,
   children,
   ...props
-}: React.ComponentProps<"div"> & { children: React.ReactNode }) => {
+}: React.ComponentProps<typeof Carousel> & { children: React.ReactNode }) => {
   const { setApi, fullscreen, fullscreenRef } = usePresentation()
 
   return (
     <div
       data-slot="presentation"
       className={cn(
-        "relative size-full overscroll-none [--controls-height:calc(var(--spacing)*16)]",
-        className
+        "relative size-full overscroll-none [--controls-height:calc(var(--spacing)*16)]"
       )}
-      {...props}
       ref={fullscreenRef}
     >
       <Carousel
@@ -131,19 +154,20 @@ const Presentation = ({
           align: "center",
         }}
         className={cn(
-          "size-full text-foreground *:data-[slot=carousel-content]:bg-background",
+          "flex size-full flex-col text-foreground *:data-[slot=carousel-content]:bg-background",
           "*:data-[slot=carousel-content]:rounded-lg",
           "*:data-[slot=carousel-content]:h-full",
           "*:data-[slot=carousel-content]:border",
           !fullscreen &&
             cn(
-              "has-data-[slot=presentation-controls]:*:data-[slot=carousel-content]:rounded-b-none",
-              "has-data-[slot=presentation-controls]:*:data-[slot=carousel-content]:h-[calc(100%-var(--controls-height))]",
-              "has-data-[slot=presentation-controls]:*:data-[slot=carousel-content]:border-b-0"
-            )
+              "has-[[data-slot=presentation-controls][data-align=bottom]]:*:data-[slot=carousel-content]:rounded-b-none has-[[data-slot=presentation-controls][data-align=top]]:*:data-[slot=carousel-content]:rounded-t-none",
+              "has-[[data-slot=presentation-controls][data-align=bottom]]:*:data-[slot=carousel-content]:h-[calc(100%-var(--controls-height))]",
+              "has-[[data-slot=presentation-controls][data-align=bottom]]:*:data-[slot=carousel-content]:border-b-0 has-[[data-slot=presentation-controls][data-align=top]]:*:data-[slot=carousel-content]:border-t-0"
+            ),
+          className
         )}
         setApi={setApi}
-        id="slides"
+        {...props}
       >
         {children}
       </Carousel>
@@ -212,20 +236,31 @@ const PresentationWatermark = ({
 const PresentationControls = ({
   children,
   className,
+  align = "bottom",
   ...props
-}: React.ComponentProps<"div">) => {
-  const { api, current, setCurrent, fullscreen, toggleFullscreen } =
-    usePresentation()
+}: React.ComponentProps<"div"> & {
+  align?: "top" | "bottom"
+}) => {
+  const {
+    api,
+    current,
+    setCurrent,
+    fullscreen,
+    toggleFullscreen,
+    disableShortcuts,
+  } = usePresentation()
   const { resolvedTheme, setTheme } = useTheme()
 
   return (
     <div
       data-slot="presentation-controls"
+      data-align={align}
       className={cn(
-        "flex items-center justify-between p-4",
+        "flex items-center justify-between p-4 data-[align=bottom]:order-last data-[align=top]:order-first",
         fullscreen
-          ? "absolute inset-x-0 bottom-0 w-full pb-4 opacity-0 transition-opacity duration-300 ease-in-out hover:opacity-100"
-          : "w-full rounded-b-lg border bg-background"
+          ? "absolute inset-x-0 w-full pb-4 opacity-0 transition-opacity duration-300 ease-in-out hover:opacity-100 data-[align=bottom]:bottom-0 data-[align=top]:top-0"
+          : "w-full border bg-background data-[align=bottom]:rounded-b-lg data-[align=top]:rounded-t-lg",
+        className
       )}
       {...props}
     >
@@ -246,7 +281,7 @@ const PresentationControls = ({
             <ChevronLeft />
           </TooltipTrigger>
           <TooltipContent>
-            Previous <Kbd>←</Kbd>
+            Previous {!disableShortcuts?.includes("previous") && <Kbd>←</Kbd>}
           </TooltipContent>
         </Tooltip>
 
@@ -285,7 +320,7 @@ const PresentationControls = ({
             <ChevronRight />
           </TooltipTrigger>
           <TooltipContent>
-            Next <Kbd>→</Kbd>
+            Next {!disableShortcuts?.includes("next") && <Kbd>→</Kbd>}
           </TooltipContent>
         </Tooltip>
       </ButtonGroup>
@@ -308,7 +343,7 @@ const PresentationControls = ({
               <Undo2 />
             </TooltipTrigger>
             <TooltipContent className="pe-2">
-              Restart <Kbd>R</Kbd>
+              Restart {!disableShortcuts?.includes("restart") && <Kbd>R</Kbd>}
             </TooltipContent>
           </Tooltip>
         </ButtonGroup>
@@ -328,7 +363,8 @@ const PresentationControls = ({
               <Shrink className={cn(!fullscreen && "hidden")} />
             </TooltipTrigger>
             <TooltipContent className="pe-2">
-              Fullscreen Mode <Kbd>F</Kbd>
+              Fullscreen Mode{" "}
+              {!disableShortcuts?.includes("fullscreen") && <Kbd>F</Kbd>}
             </TooltipContent>
           </Tooltip>
         </ButtonGroup>
@@ -350,11 +386,13 @@ const PresentationControls = ({
               <Moon className={cn("block dark:hidden")} />
             </TooltipTrigger>
             <TooltipContent className="pe-2">
-              Dark Mode <Kbd>D</Kbd>
+              Dark Mode {!disableShortcuts?.includes("theme") && <Kbd>D</Kbd>}
             </TooltipContent>
           </Tooltip>
         </ButtonGroup>
       </ButtonGroup>
+
+      {children}
     </div>
   )
 }

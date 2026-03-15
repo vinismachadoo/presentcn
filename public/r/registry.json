@@ -1,0 +1,59 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "presentcn",
+  "homepage": "https://presentcn.ovinisanches.com",
+  "items": [
+    {
+      "name": "index",
+      "type": "registry:style",
+      "dependencies": ["class-variance-authority", "lucide-react", "@base-ui/react"],
+      "devDependencies": ["tw-animate-css", "shadcn"],
+      "registryDependencies": ["utils"],
+      "css": {
+        "@import 'tw-animate-css'": {},
+        "@import 'shadcn/tailwind.css'": {},
+        "@layer base": {
+          "*": {
+            "@apply border-border outline-ring/50 text-sm": {}
+          },
+          "body": {
+            "@apply bg-background text-foreground": {}
+          }
+        }
+      },
+      "files": [],
+      "cssVars": {}
+    },
+    {
+      "name": "style",
+      "type": "registry:style",
+      "dependencies": ["class-variance-authority", "lucide-react"],
+      "devDependencies": ["tw-animate-css"],
+      "registryDependencies": ["utils"],
+      "files": [],
+      "cssVars": {}
+    },
+    {
+      "name": "presentation",
+      "type": "registry:ui",
+      "registryDependencies": ["https://ovinisanches.com/r/button.json", "https://ovinisanches.com/r/button-group.json", "https://ovinisanches.com/r/carousel.json", "https://ovinisanches.com/r/kbd.json", "https://ovinisanches.com/r/tooltip.json"],
+      "dependencies": ["nuqs", "react-hotkeys-hook"],
+      "files": [
+        {
+          "path": "registry/default/ui/presentation.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "use-fullscreen",
+      "type": "registry:hook",
+      "files": [
+        {
+          "path": "registry/default/hooks/use-fullscreen.ts",
+          "type": "registry:hook"
+        }
+      ]
+    }
+  ]
+}
