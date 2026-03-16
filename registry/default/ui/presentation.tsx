@@ -30,30 +30,53 @@ import { parseAsInteger, useQueryState } from "nuqs"
 import React from "react"
 import { useHotkeys } from "react-hotkeys-hook"
 
-const PresentationContext = React.createContext<
-  | {
-      api: CarouselApi | undefined
-      setApi: React.Dispatch<React.SetStateAction<CarouselApi | undefined>>
-      current: number
-      setCurrent: React.Dispatch<React.SetStateAction<number>>
-      fullscreen: boolean
-      fullscreenRef: React.RefObject<HTMLDivElement | null>
-      toggleFullscreen: () => void
-      disableShortcuts: Array<
-        "fullscreen" | "restart" | "theme" | "previous" | "next"
-      >
-    }
-  | undefined
->(undefined)
+const SLIDE_PREVIEW_WIDTH = "16rem"
 
-const PresentationProvider = ({
-  children,
-  disableShortcuts = [],
-}: React.PropsWithChildren<{
+type PresentationContextProps = {
+  api: CarouselApi | undefined
+  setApi: React.Dispatch<React.SetStateAction<CarouselApi | undefined>>
+  current: number
+  setCurrent: React.Dispatch<React.SetStateAction<number>>
+  fullscreen: boolean
+  fullscreenRef: React.RefObject<HTMLDivElement | null>
+  toggleFullscreen: () => void
+  disableShortcuts: Array<
+    "fullscreen" | "restart" | "theme" | "previous" | "next"
+  >
+  watermark: React.ReactNode | undefined
+}
+
+const PresentationContext =
+  React.createContext<PresentationContextProps | null>(null)
+
+const usePresentation = () => {
+  const context = React.useContext(PresentationContext)
+  if (!context) {
+    throw new Error(
+      "usePresentation must be used within a PresentationProvider"
+    )
+  }
+  return context
+}
+
+export type PresentationConfig = {
   disableShortcuts?: Array<
     "fullscreen" | "restart" | "theme" | "previous" | "next"
   >
-}>) => {
+  watermark?: React.ReactNode
+}
+
+const Presentation = ({
+  config = {},
+  className,
+  style,
+  children,
+  ...props
+}: React.ComponentProps<typeof Carousel> & {
+  config?: PresentationConfig
+}) => {
+  const { disableShortcuts = [], watermark } = config
+
   const [api, setApi] = React.useState<CarouselApi>()
   const [current, setCurrent] = useQueryState(
     "slide",
@@ -105,73 +128,73 @@ const PresentationProvider = ({
     enabled: !disableShortcuts?.includes("fullscreen"),
   })
 
+  const contextValue = React.useMemo<PresentationContextProps>(
+    () => ({
+      api,
+      setApi,
+      current,
+      setCurrent,
+      fullscreen,
+      fullscreenRef,
+      toggleFullscreen,
+      disableShortcuts,
+      watermark,
+    }),
+    [
+      api,
+      setApi,
+      current,
+      setCurrent,
+      fullscreen,
+      fullscreenRef,
+      toggleFullscreen,
+      disableShortcuts,
+      watermark,
+    ]
+  )
+
   return (
     <PresentationContext.Provider
       data-slot="presentation-provider"
-      value={{
-        api,
-        setApi,
-        current,
-        setCurrent,
-        fullscreen,
-        fullscreenRef,
-        toggleFullscreen,
-        disableShortcuts,
-      }}
+      value={contextValue}
     >
-      {children}
-    </PresentationContext.Provider>
-  )
-}
-
-const usePresentation = () => {
-  const context = React.useContext(PresentationContext)
-  if (context === undefined) {
-    throw new Error(
-      "usePresentation must be used within a PresentationProvider"
-    )
-  }
-  return context
-}
-
-const Presentation = ({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<typeof Carousel> & { children: React.ReactNode }) => {
-  const { setApi, fullscreen, fullscreenRef } = usePresentation()
-
-  return (
-    <div
-      data-slot="presentation"
-      className={cn(
-        "relative size-full overscroll-none [--controls-height:calc(var(--spacing)*16)]"
-      )}
-      ref={fullscreenRef}
-    >
-      <Carousel
-        opts={{
-          align: "center",
-        }}
+      <div
+        data-slot="presentation"
+        style={
+          {
+            "--slide-preview-width": SLIDE_PREVIEW_WIDTH,
+            ...style,
+          } as React.CSSProperties
+        }
         className={cn(
-          "flex size-full flex-col text-foreground *:data-[slot=carousel-content]:bg-background",
-          "*:data-[slot=carousel-content]:rounded-lg",
-          "*:data-[slot=carousel-content]:h-full",
-          "*:data-[slot=carousel-content]:border",
-          !fullscreen &&
-            cn(
-              "has-[[data-slot=presentation-controls][data-align=bottom]]:*:data-[slot=carousel-content]:rounded-b-none has-[[data-slot=presentation-controls][data-align=top]]:*:data-[slot=carousel-content]:rounded-t-none",
-              "has-[[data-slot=presentation-controls][data-align=bottom]]:*:data-[slot=carousel-content]:h-[calc(100%-var(--controls-height))]",
-              "has-[[data-slot=presentation-controls][data-align=bottom]]:*:data-[slot=carousel-content]:border-b-0 has-[[data-slot=presentation-controls][data-align=top]]:*:data-[slot=carousel-content]:border-t-0"
-            ),
+          "relative size-full overscroll-none [--controls-height:calc(var(--spacing)*16)]",
           className
         )}
-        setApi={setApi}
-        {...props}
+        ref={fullscreenRef}
       >
-        {children}
-      </Carousel>
-    </div>
+        <Carousel
+          opts={{
+            align: "center",
+          }}
+          className={cn(
+            "flex size-full flex-col text-foreground *:data-[slot=carousel-content]:bg-background",
+            "*:data-[slot=carousel-content]:rounded-lg",
+            "*:data-[slot=carousel-content]:h-full",
+            "*:data-[slot=carousel-content]:border",
+            !fullscreen &&
+              cn(
+                "has-[[data-slot=presentation-controls][data-align=bottom]]:*:data-[slot=carousel-content]:rounded-b-none has-[[data-slot=presentation-controls][data-align=top]]:*:data-[slot=carousel-content]:rounded-t-none",
+                "has-[[data-slot=presentation-controls][data-align=bottom]]:*:data-[slot=carousel-content]:h-[calc(100%-var(--controls-height))]",
+                "has-[[data-slot=presentation-controls][data-align=bottom]]:*:data-[slot=carousel-content]:border-b-0 has-[[data-slot=presentation-controls][data-align=top]]:*:data-[slot=carousel-content]:border-t-0"
+              )
+          )}
+          setApi={setApi}
+          {...props}
+        >
+          {children}
+        </Carousel>
+      </div>
+    </PresentationContext.Provider>
   )
 }
 
@@ -183,7 +206,7 @@ const PresentationContent = ({
   return (
     <CarouselContent
       data-slot="presentation-content"
-      className={cn("ml-0 h-full", className)}
+      className={cn("mt-0 ml-0 h-full", className)}
       {...props}
     >
       {children}
@@ -198,6 +221,7 @@ const PresentationSlide = ({
   ...props
 }: React.ComponentProps<"div"> & { showWatermark?: boolean }) => {
   const id = React.useId()
+  const { watermark } = usePresentation()
   return (
     <CarouselItem
       data-slot="presentation-slide"
@@ -210,6 +234,9 @@ const PresentationSlide = ({
       >
         {children}
       </div>
+      {showWatermark && watermark && (
+        <PresentationWatermark>{watermark}</PresentationWatermark>
+      )}
     </CarouselItem>
   )
 }
@@ -397,12 +424,49 @@ const PresentationControls = ({
   )
 }
 
+const PresentationProtection = ({
+  className,
+  content,
+  ...props
+}: React.ComponentProps<"div"> & {
+  content?: React.ReactNode
+}) => {
+  return (
+    <div
+      className={cn(
+        "absolute inset-0 z-50 size-full overflow-hidden rounded-lg",
+        className
+      )}
+      {...props}
+    >
+      <div className="size-full bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs" />
+      {content || <PresentationProtectionContent />}
+    </div>
+  )
+}
+
+const PresentationProtectionContent = ({
+  className,
+  ...props
+}: React.ComponentProps<"div">) => {
+  return (
+    <div
+      className={cn(
+        "size-full bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
 export {
   Presentation,
   PresentationContent,
   PresentationControls,
-  PresentationProvider,
   PresentationSlide,
   PresentationWatermark,
+  PresentationProtection,
+  PresentationProtectionContent,
   usePresentation,
 }

@@ -37,7 +37,7 @@
       "name": "presentation",
       "type": "registry:ui",
       "registryDependencies": ["https://ovinisanches.com/r/button.json", "https://ovinisanches.com/r/button-group.json", "https://ovinisanches.com/r/carousel.json", "https://ovinisanches.com/r/kbd.json", "https://ovinisanches.com/r/tooltip.json"],
-      "dependencies": ["nuqs", "react-hotkeys-hook"],
+      "dependencies": ["nuqs", "react-hotkeys-hook", "next-themes"],
       "files": [
         {
           "path": "registry/default/ui/presentation.tsx",
