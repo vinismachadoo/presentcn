@@ -1,4 +1,4 @@
-import ogImage from "@/app/opengraph-image.png"
+import MainNav from "@/components/main-nav"
 import { ThemeProvider } from "@/components/providers/theme-provider"
 import { TailwindIndicator } from "@/components/tailwind-indicator"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -7,7 +7,6 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono, Inter } from "next/font/google"
 import { NuqsAdapter } from "nuqs/adapters/next/app"
 import "./globals.css"
-import MainNav from "@/components/main-nav"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
@@ -39,36 +38,6 @@ export const metadata: Metadata = {
       },
     ],
   },
-  // openGraph: {
-  //   type: "website",
-  //   locale: "en_US",
-  //   url: `${process.env.NEXT_PUBLIC_URL}`,
-  //   title: "ovini/labs",
-  //   description: "ovini/labs",
-  //   siteName: "ovini/labs",
-  //   images: [
-  //     {
-  //       url: ogImage.src,
-  //       width: ogImage.width,
-  //       height: ogImage.height,
-  //       alt: "ovini/labs",
-  //     },
-  //   ],
-  // },
-  // twitter: {
-  //   card: "summary_large_image",
-  //   title: "ovini/labs",
-  //   description: "ovini/labs",
-  //   images: [
-  //     {
-  //       url: ogImage.src,
-  //       width: ogImage.width,
-  //       height: ogImage.height,
-  //       alt: "ovini/labs",
-  //     },
-  //   ],
-  //   creator: "@ovinisanches",
-  // },
 }
 
 export default function RootLayout({
