@@ -1,19 +1,19 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { ButtonGroup } from "@/components/ui/button-group"
+import { Button } from "@/registry/default/ui/button"
+import { ButtonGroup } from "@/registry/default/ui/button-group"
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   type CarouselApi,
-} from "@/components/ui/carousel"
-import { Kbd } from "@/components/ui/kbd"
+} from "@/registry/default/ui/carousel"
+import { Kbd } from "@/registry/default/ui/kbd"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/registry/default/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { useFullscreen } from "@/registry/default/hooks/use-fullscreen"
 import {
@@ -52,11 +52,26 @@ const PresentationContext =
 const usePresentation = () => {
   const context = React.useContext(PresentationContext)
   if (!context) {
-    throw new Error(
-      "usePresentation must be used within a PresentationProvider"
-    )
+    throw new Error("usePresentation must be used within a Presentation")
   }
   return context
+}
+
+type PresentationSlideContextProps = {
+  slide: number
+}
+
+const PresentationSlideContext =
+  React.createContext<PresentationSlideContextProps | null>(null)
+
+const usePresentationSlide = () => {
+  const slideIndex = React.useContext(PresentationSlideContext)
+  if (slideIndex === null) {
+    throw new Error(
+      "usePresentationSlide must be used within PresentationContent"
+    )
+  }
+  return slideIndex
 }
 
 export type PresentationConfig = {
@@ -206,10 +221,21 @@ const PresentationContent = ({
   return (
     <CarouselContent
       data-slot="presentation-content"
-      className={cn("mt-0 ml-0 h-full", className)}
+      className={cn("ml-0 h-full", className)}
       {...props}
     >
-      {children}
+      {React.Children.map(children, (child, index) => {
+        if (!React.isValidElement(child)) return child
+
+        return (
+          <PresentationSlideContext.Provider
+            key={child.key ?? index}
+            value={{ slide: index + 1 }}
+          >
+            {child}
+          </PresentationSlideContext.Provider>
+        )
+      })}
     </CarouselContent>
   )
 }
@@ -222,9 +248,11 @@ const PresentationSlide = ({
 }: React.ComponentProps<"div"> & { showWatermark?: boolean }) => {
   const id = React.useId()
   const { watermark } = usePresentation()
+  const { slide } = usePresentationSlide()
   return (
     <CarouselItem
       data-slot="presentation-slide"
+      data-slide={slide}
       id={`slide-${id}`}
       className={cn("relative flex items-center justify-center p-4")}
     >
@@ -268,15 +296,7 @@ const PresentationControls = ({
 }: React.ComponentProps<"div"> & {
   align?: "top" | "bottom"
 }) => {
-  const {
-    api,
-    current,
-    setCurrent,
-    fullscreen,
-    toggleFullscreen,
-    disableShortcuts,
-  } = usePresentation()
-  const { resolvedTheme, setTheme } = useTheme()
+  const { fullscreen } = usePresentation()
 
   return (
     <div
@@ -291,6 +311,98 @@ const PresentationControls = ({
       )}
       {...props}
     >
+      {children}
+    </div>
+  )
+}
+
+const PresentationPaginationControls = ({
+  ...props
+}: React.ComponentProps<typeof ButtonGroup>) => {
+  const { api, current, setCurrent, disableShortcuts } = usePresentation()
+
+  return (
+    <ButtonGroup {...props}>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="outline"
+              size="icon-sm"
+              onClick={() => setCurrent(Math.max(0, current - 1))}
+              className={cn(
+                current === 1 && "pointer-events-none [&_svg]:opacity-50"
+              )}
+            />
+          }
+        >
+          <ChevronLeft />
+        </TooltipTrigger>
+        <TooltipContent>
+          Previous {!disableShortcuts?.includes("previous") && <Kbd>←</Kbd>}
+        </TooltipContent>
+      </Tooltip>
+
+      <Button
+        variant="outline"
+        size="sm"
+        className="pointer-events-none tabular-nums"
+      >
+        {api?.scrollSnapList()?.length ? (
+          <span>
+            {current} / {api?.scrollSnapList()?.length}
+          </span>
+        ) : (
+          <span>...</span>
+        )}
+      </Button>
+
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="outline"
+              size="icon-sm"
+              onClick={() =>
+                setCurrent(
+                  Math.min(api?.scrollSnapList()?.length ?? 0, current + 1)
+                )
+              }
+              className={cn(
+                current === api?.scrollSnapList()?.length &&
+                  "pointer-events-none [&_svg]:opacity-50"
+              )}
+            />
+          }
+        >
+          <ChevronRight />
+        </TooltipTrigger>
+        <TooltipContent>
+          Next {!disableShortcuts?.includes("next") && <Kbd>→</Kbd>}
+        </TooltipContent>
+      </Tooltip>
+    </ButtonGroup>
+  )
+}
+
+const PresentationSettingsControls = ({
+  ...props
+}: React.ComponentProps<typeof ButtonGroup>) => {
+  const {
+    current,
+    setCurrent,
+    fullscreen,
+    toggleFullscreen,
+    disableShortcuts,
+  } = usePresentation()
+  const { resolvedTheme, setTheme } = useTheme()
+
+  return (
+    <ButtonGroup
+      orientation="horizontal"
+      aria-label="slides navigation"
+      {...props}
+    >
       <ButtonGroup>
         <Tooltip>
           <TooltipTrigger
@@ -298,34 +410,43 @@ const PresentationControls = ({
               <Button
                 variant="outline"
                 size="icon-sm"
-                onClick={() => setCurrent(Math.max(0, current - 1))}
+                onClick={() => setCurrent(0)}
                 className={cn(
-                  current === 1 && "pointer-events-none [&_svg]:opacity-50"
+                  current === 0 && "pointer-events-none [&_svg]:opacity-50"
                 )}
               />
             }
           >
-            <ChevronLeft />
+            <Undo2 />
           </TooltipTrigger>
-          <TooltipContent>
-            Previous {!disableShortcuts?.includes("previous") && <Kbd>←</Kbd>}
+          <TooltipContent className="pe-2">
+            Restart {!disableShortcuts?.includes("restart") && <Kbd>R</Kbd>}
           </TooltipContent>
         </Tooltip>
+      </ButtonGroup>
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="pointer-events-none tabular-nums"
-        >
-          {api?.scrollSnapList()?.length ? (
-            <span>
-              {current} / {api?.scrollSnapList()?.length}
-            </span>
-          ) : (
-            <span>...</span>
-          )}
-        </Button>
+      <ButtonGroup>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={toggleFullscreen}
+              />
+            }
+          >
+            <Expand className={cn(fullscreen && "hidden")} />
+            <Shrink className={cn(!fullscreen && "hidden")} />
+          </TooltipTrigger>
+          <TooltipContent className="pe-2">
+            Fullscreen Mode{" "}
+            {!disableShortcuts?.includes("fullscreen") && <Kbd>F</Kbd>}
+          </TooltipContent>
+        </Tooltip>
+      </ButtonGroup>
 
+      <ButtonGroup>
         <Tooltip>
           <TooltipTrigger
             render={
@@ -333,130 +454,20 @@ const PresentationControls = ({
                 variant="outline"
                 size="icon-sm"
                 onClick={() =>
-                  setCurrent(
-                    Math.min(api?.scrollSnapList()?.length ?? 0, current + 1)
-                  )
+                  setTheme(resolvedTheme === "dark" ? "light" : "dark")
                 }
-                className={cn(
-                  current === api?.scrollSnapList()?.length &&
-                    "pointer-events-none [&_svg]:opacity-50"
-                )}
               />
             }
           >
-            <ChevronRight />
+            <Sun className={cn("hidden dark:block")} />
+            <Moon className={cn("block dark:hidden")} />
           </TooltipTrigger>
-          <TooltipContent>
-            Next {!disableShortcuts?.includes("next") && <Kbd>→</Kbd>}
+          <TooltipContent className="pe-2">
+            Dark Mode {!disableShortcuts?.includes("theme") && <Kbd>D</Kbd>}
           </TooltipContent>
         </Tooltip>
       </ButtonGroup>
-
-      <ButtonGroup orientation="horizontal" aria-label="slides navigation">
-        <ButtonGroup>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  onClick={() => setCurrent(0)}
-                  className={cn(
-                    current === 0 && "pointer-events-none [&_svg]:opacity-50"
-                  )}
-                />
-              }
-            >
-              <Undo2 />
-            </TooltipTrigger>
-            <TooltipContent className="pe-2">
-              Restart {!disableShortcuts?.includes("restart") && <Kbd>R</Kbd>}
-            </TooltipContent>
-          </Tooltip>
-        </ButtonGroup>
-
-        <ButtonGroup>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  onClick={toggleFullscreen}
-                />
-              }
-            >
-              <Expand className={cn(fullscreen && "hidden")} />
-              <Shrink className={cn(!fullscreen && "hidden")} />
-            </TooltipTrigger>
-            <TooltipContent className="pe-2">
-              Fullscreen Mode{" "}
-              {!disableShortcuts?.includes("fullscreen") && <Kbd>F</Kbd>}
-            </TooltipContent>
-          </Tooltip>
-        </ButtonGroup>
-
-        <ButtonGroup>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  onClick={() =>
-                    setTheme(resolvedTheme === "dark" ? "light" : "dark")
-                  }
-                />
-              }
-            >
-              <Sun className={cn("hidden dark:block")} />
-              <Moon className={cn("block dark:hidden")} />
-            </TooltipTrigger>
-            <TooltipContent className="pe-2">
-              Dark Mode {!disableShortcuts?.includes("theme") && <Kbd>D</Kbd>}
-            </TooltipContent>
-          </Tooltip>
-        </ButtonGroup>
-      </ButtonGroup>
-
-      {children}
-    </div>
-  )
-}
-
-const PresentationProtection = ({
-  className,
-  content,
-  ...props
-}: React.ComponentProps<"div"> & {
-  content?: React.ReactNode
-}) => {
-  return (
-    <div
-      className={cn(
-        "absolute inset-0 z-50 size-full overflow-hidden rounded-lg",
-        className
-      )}
-      {...props}
-    >
-      <div className="size-full bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs" />
-      {content || <PresentationProtectionContent />}
-    </div>
-  )
-}
-
-const PresentationProtectionContent = ({
-  className,
-  ...props
-}: React.ComponentProps<"div">) => {
-  return (
-    <div
-      className={cn(
-        "size-full bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs",
-        className
-      )}
-      {...props}
-    />
+    </ButtonGroup>
   )
 }
 
@@ -464,9 +475,10 @@ export {
   Presentation,
   PresentationContent,
   PresentationControls,
+  PresentationPaginationControls,
+  PresentationSettingsControls,
   PresentationSlide,
   PresentationWatermark,
-  PresentationProtection,
-  PresentationProtectionContent,
   usePresentation,
+  usePresentationSlide,
 }

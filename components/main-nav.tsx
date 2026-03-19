@@ -1,7 +1,7 @@
 "use client"
 
 import ModeToggle from "@/components/mode-toggle"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/registry/default/ui/button"
 import { Projector } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"

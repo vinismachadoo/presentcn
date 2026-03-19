@@ -1,7 +1,7 @@
 import MainNav from "@/components/main-nav"
 import { ThemeProvider } from "@/components/providers/theme-provider"
 import { TailwindIndicator } from "@/components/tailwind-indicator"
-import { TooltipProvider } from "@/components/ui/tooltip"
+import { TooltipProvider } from "@/registry/default/ui/tooltip"
 import { cn } from "@/lib/utils"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono, Inter } from "next/font/google"

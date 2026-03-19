@@ -4,10 +4,10 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { Button } from "@/components/ui/button"
+} from "@/registry/default/ui/tooltip"
+import { Button } from "@/registry/default/ui/button"
 import { SunIcon, Moon } from "lucide-react"
-import { Kbd } from "@/components/ui/kbd"
+import { Kbd } from "@/registry/default/ui/kbd"
 import { cn } from "@/lib/utils"
 
 const ModeToggle = ({

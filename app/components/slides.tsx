@@ -1,16 +1,18 @@
 "use client"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/registry/default/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { Kbd } from "@/components/ui/kbd"
+import { Kbd } from "@/registry/default/ui/kbd"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Presentation,
   PresentationContent,
   PresentationControls,
+  PresentationPaginationControls,
+  PresentationSettingsControls,
   PresentationSlide,
 } from "@/registry/default/ui/presentation"
 import { parseAsString, useQueryState } from "nuqs"
@@ -112,7 +114,10 @@ const SlidesShowcase = () => {
               <p>Default slide 3</p>
             </PresentationSlide>
           </PresentationContent>
-          <PresentationControls align={controlAlignment} />
+          <PresentationControls align={controlAlignment}>
+            <PresentationPaginationControls />
+            <PresentationSettingsControls />
+          </PresentationControls>
         </Presentation>
       </TabsContent>
 
@@ -152,7 +157,10 @@ const SlidesShowcase = () => {
               <p>This slide will scroll {`${presentationOrientation}`}ly</p>
             </PresentationSlide>
           </PresentationContent>
-          <PresentationControls />
+          <PresentationControls>
+            <PresentationPaginationControls />
+            <PresentationSettingsControls />
+          </PresentationControls>
         </Presentation>
       </TabsContent>
 
@@ -263,7 +271,10 @@ const SlidesShowcase = () => {
               )}
             </PresentationSlide>
           </PresentationContent>
-          <PresentationControls />
+          <PresentationControls>
+            <PresentationPaginationControls />
+            <PresentationSettingsControls />
+          </PresentationControls>
         </Presentation>
       </TabsContent>
 
@@ -330,7 +341,10 @@ const SlidesShowcase = () => {
               </p>
             </PresentationSlide>
           </PresentationContent>
-          <PresentationControls />
+          <PresentationControls>
+            <PresentationPaginationControls />
+            <PresentationSettingsControls />
+          </PresentationControls>
         </Presentation>
       </TabsContent>
     </Tabs>
